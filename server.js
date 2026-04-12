@@ -2,45 +2,41 @@ const express = require('express');
 const app = express();
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
-const fs = require('fs'); // Модуль для работы с файлами
+const fs = require('fs');
 
 app.use(express.static(__dirname));
 
 const DATA_FILE = 'pixels.json';
 let pixelData = {}; 
+let lastMove = {}; // Храним время последнего хода для каждого IP
 
-// 1. При старте сервера пытаемся прочитать сохраненные пиксели
 if (fs.existsSync(DATA_FILE)) {
-    const data = fs.readFileSync(DATA_FILE);
-    try {
-        pixelData = JSON.parse(data);
-        console.log('Данные холста успешно загружены!');
-    } catch (e) {
-        console.error('Ошибка чтения файла пикселей:', e);
-    }
+    pixelData = JSON.parse(fs.readFileSync(DATA_FILE));
 }
 
 io.on('connection', (socket) => {
-    // 2. Новому игроку сразу отправляем всё состояние холста
+    // Получаем IP игрока (для Render это работает через заголовки)
+    const clientIp = socket.handshake.headers['x-forwarded-for'] || socket.request.connection.remoteAddress;
+
     socket.emit('loadCanvas', pixelData);
 
     socket.on('setPixel', (data) => {
-        const id = `${data.x}-${data.y}`;
-        
-        // Обновляем пиксель в оперативной памяти
-        pixelData[id] = data.color;
-        
-        // Рассылаем всем игрокам (включая того, кто нарисовал)
+        const now = Date.now();
+        const COOLDOWN = 10000; // 10 секунд
+
+        if (lastMove[clientIp] && now - lastMove[clientIp] < COOLDOWN) {
+            const remaining = Math.ceil((COOLDOWN - (now - lastMove[clientIp])) / 1000);
+            socket.emit('error_cooldown', remaining);
+            return;
+        }
+
+        lastMove[clientIp] = now;
+        pixelData[`${data.x}-${data.y}`] = data.color;
         io.emit('updatePixel', data);
 
-        // 3. Сохраняем обновление в файл
-        fs.writeFile(DATA_FILE, JSON.stringify(pixelData), (err) => {
-            if (err) console.error("Ошибка сохранения в файл:", err);
-        });
+        fs.writeFile(DATA_FILE, JSON.stringify(pixelData), (err) => {});
     });
 });
 
 const PORT = process.env.PORT || 3000;
-http.listen(PORT, () => {
-    console.log('Сервер запущен на порту ' + PORT);
-});
+http.listen(PORT, () => console.log('Event Server Live!'));
