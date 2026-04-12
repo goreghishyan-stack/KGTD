@@ -2,40 +2,42 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Pixel Battle Event</title>
+    <title>Pixel Battle PRO</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        body { margin: 0; background: #1a1a1a; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
-        #controls { background: #2c3e50; padding: 10px 20px; display: flex; align-items: center; gap: 20px; border-bottom: 3px solid #34495e; position: relative; z-index: 10; }
+        body { margin: 0; background: #1a1a1a; color: white; font-family: sans-serif; overflow: hidden; }
+        #controls { background: #2c3e50; padding: 10px; display: flex; align-items: center; gap: 15px; border-bottom: 3px solid #34495e; position: relative; z-index: 10; }
         canvas { display: block; background: #000; cursor: crosshair; }
         
-        /* Стиль меню ника */
         #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
-        #login-box { background: #34495e; padding: 40px; border-radius: 15px; box-shadow: 0 0 30px rgba(0,0,0,0.5); text-align: center; }
-        input[type="text"] { padding: 12px; font-size: 18px; border-radius: 5px; border: none; margin-bottom: 20px; width: 250px; }
-        button { padding: 12px 25px; font-size: 18px; background: #27ae60; color: white; border: none; border-radius: 5px; cursor: pointer; transition: 0.3s; }
-        button:hover { background: #2ecc71; transform: scale(1.05); }
+        #login-box { background: #34495e; padding: 30px; border-radius: 15px; text-align: center; }
+        input[type="text"] { padding: 10px; font-size: 18px; border-radius: 5px; border: none; margin-bottom: 15px; }
+        button { padding: 10px 20px; background: #27ae60; color: white; border: none; border-radius: 5px; cursor: pointer; }
         
-        #timer-display { font-weight: bold; color: #f1c40f; font-size: 20px; min-width: 120px; }
-        .hint { font-size: 12px; color: #bdc3c7; }
+        #pixel-info { 
+            position: fixed; background: rgba(0,0,0,0.8); color: white; padding: 5px 10px; 
+            border-radius: 5px; font-size: 13px; pointer-events: none; display: none; z-index: 1000; border: 1px solid #555;
+        }
+        #timer-display { font-weight: bold; color: #f1c40f; }
     </style>
 </head>
 <body>
 
+<div id="pixel-info"></div>
+
 <div id="login-screen">
     <div id="login-box">
         <h1>PIXEL BATTLE</h1>
-        <input type="text" id="nickname" placeholder="Введите ваш ник...">
+        <input type="text" id="nickname" placeholder="Твой ник...">
         <br>
-        <button onclick="startGame()">В БОЙ!</button>
-        <p class="hint">ЛКМ - рисовать | ПКМ - двигать | Колесико - зум</p>
+        <button onclick="startGame()">ИГРАТЬ</button>
     </div>
 </div>
 
 <div id="controls">
-    <input type="color" id="colorPicker" value="#e74c3c">
+    <input type="color" id="colorPicker" value="#ff0000">
     <div id="timer-display">ГОТОВ</div>
-    <div id="user-info"></div>
+    <div id="user-display" style="font-size: 14px; color: #bdc3c7;"></div>
 </div>
 
 <canvas id="pixelCanvas"></canvas>
