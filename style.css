@@ -1,2 +1,84 @@
-body { background: #333; color: white; text-align: center; }
-canvas { background: #eee; border: 5px solid #555; }
+<style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    
+    body { 
+        margin: 0; 
+        background: #0a0a0a; /* Глубокий черный */
+        color: #e0e0e0; 
+        font-family: -apple-system, system-ui, sans-serif; 
+    }
+
+    header { 
+        padding: 20px; 
+        background: rgba(10, 10, 10, 0.8);
+        backdrop-filter: blur(15px);
+        border-bottom: 1px solid #1a1a1a;
+        position: sticky; top: 0; z-index: 100;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+
+    #logo { 
+        font-size: 24px; font-weight: 900; letter-spacing: -1px; 
+        background: linear-gradient(90deg, #fff, #555);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    #feed { 
+        max-width: 500px; margin: 0 auto; padding: 20px; 
+        display: flex; flex-direction: column-reverse; /* Новые посты сверху */
+    }
+
+    .post { 
+        background: #121212; 
+        border: 1px solid #1f1f1f;
+        border-radius: 16px; 
+        padding: 16px; 
+        margin-bottom: 12px;
+        transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .post:hover { border-color: #333; transform: translateY(-2px); }
+
+    .post-header { 
+        font-size: 13px; font-weight: 700; color: #00ff88; /* Цвет ника */
+        margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
+    }
+
+    .post-content { 
+        font-size: 15px; line-height: 1.5; color: #fff; word-wrap: break-word;
+    }
+
+    /* Красивый инпут снизу */
+    #input-area { 
+        position: fixed; bottom: 0; left: 0; width: 100%; 
+        padding: 20px; background: linear-gradient(transparent, #0a0a0a 40%);
+        display: flex; justify-content: center;
+    }
+
+    #post-input { 
+        width: 100%; max-width: 500px;
+        background: #1a1a1a; border: 1px solid #333; 
+        color: #fff; padding: 14px 20px; font-size: 16px; 
+        border-radius: 30px; outline: none;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    }
+
+    #post-input:focus { border-color: #00ff88; }
+
+    /* Экран входа */
+    #login-screen { 
+        position: fixed; inset: 0; background: #000; 
+        display: flex; align-items: center; justify-content: center; z-index: 200; 
+    }
+    .box { width: 90%; max-width: 320px; text-align: center; }
+    .box h1 { font-size: 48px; font-weight: 900; margin-bottom: 30px; letter-spacing: -2px; }
+    
+    #nickname { 
+        width: 100%; padding: 16px; background: #111; border: 1px solid #222; 
+        border-radius: 12px; color: #fff; font-size: 16px; margin-bottom: 12px;
+    }
+    .enter-btn { 
+        width: 100%; padding: 16px; background: #fff; color: #000; 
+        border-radius: 12px; font-weight: 800; cursor: pointer; border: none;
+    }
+</style>
