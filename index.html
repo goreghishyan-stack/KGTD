@@ -3,126 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>КГТД — Здесь кайфово</title>
+    <title>KGTD — Соцсеть</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        :root { 
-            --bg: #050505; 
-            --card: #111111; 
-            --accent: #fff; 
-            --text: #ffffff; 
-            --secondary: #666;
-        }
+        :root { --bg: #050505; --card: #111; --accent: #fff; --text: #fff; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; background: var(--bg); color: var(--text); font-family: sans-serif; }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        /* Экраны */
+        .screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 1000; transition: 0.3s; }
+        .hidden { display: none !important; }
+
+        /* Авторизация */
+        .auth-box { width: 90%; max-width: 320px; text-align: center; }
+        .btn { width: 100%; padding: 16px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-main { background: #fff; color: #000; }
+        .btn-outline { background: transparent; color: #fff; border: 1px solid #333; }
+
+        /* Навигация (Нижнее меню) */
+        nav { 
+            position: fixed; bottom: 0; width: 100%; background: rgba(10,10,10,0.9); 
+            backdrop-filter: blur(10px); display: flex; justify-content: space-around; 
+            padding: 15px; border-top: 1px solid #222; z-index: 500;
+        }
+        nav div { cursor: pointer; font-size: 20px; opacity: 0.5; transition: 0.3s; }
+        nav div.active { opacity: 1; transform: translateY(-3px); }
+
+        /* Контент */
+        #main-container { max-width: 500px; margin: 0 auto; padding: 20px 15px 100px; }
+        .post { background: var(--card); border-radius: 20px; padding: 15px; margin-bottom: 15px; border: 1px solid #1a1a1a; }
+        .clan-tag { font-size: 12px; color: #888; font-weight: bold; margin-bottom: 5px; }
         
-        body { 
-            margin: 0; 
-            background: var(--bg); 
-            color: var(--text); 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            overflow-x: hidden;
-        }
-
-        /* Экраны входа */
-        .screen { 
-            position: fixed; inset: 0; background: var(--bg); 
-            display: flex; align-items: center; justify-content: center; z-index: 1000;
-            transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .hidden { opacity: 0; pointer-events: none; transform: scale(1.1); }
-
-        .auth-box { 
-            width: 90%; max-width: 340px; text-align: center;
-            animation: fadeIn 0.8s ease;
-        }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        h1 { font-size: 56px; font-weight: 900; letter-spacing: -3px; margin: 0 0 40px; }
-        
-        input { 
-            width: 100%; padding: 18px; background: #1a1a1a; 
-            border: 1px solid #333; border-radius: 16px; 
-            color: #fff; font-size: 16px; margin-bottom: 15px; transition: 0.3s;
-        }
-        input:focus { border-color: var(--accent); }
-
-        .btn { 
-            width: 100%; padding: 18px; background: var(--accent); color: #000; 
-            border: none; border-radius: 16px; font-weight: 800; font-size: 16px; cursor: pointer;
-        }
-
-        /* Кланы */
-        .emoji-grid { 
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; 
-            margin: 25px 0; max-height: 240px; overflow-y: auto; padding: 5px;
-        }
-        .emoji-item { 
-            font-size: 32px; padding: 15px; cursor: pointer; background: #151515;
-            border-radius: 16px; transition: 0.2s; border: 2px solid transparent;
-        }
-        .emoji-item.selected { border-color: var(--accent); background: #222; transform: scale(1.05); }
-
-        /* Лента */
-        header { 
-            padding: 20px; position: sticky; top: 0; background: rgba(5,5,5,0.8);
-            backdrop-filter: blur(20px); z-index: 100; border-bottom: 1px solid #1a1a1a;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        #logo-top { font-weight: 900; font-size: 22px; letter-spacing: -1px; }
-
-        #feed { max-width: 500px; margin: 0 auto; padding: 20px 15px 120px; }
-        
-        .post { 
-            background: var(--card); border-radius: 24px; padding: 20px; 
-            margin-bottom: 15px; border: 1px solid #1a1a1a;
-            animation: slideUp 0.4s ease-out;
-        }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } }
-
-        .post-user { font-size: 13px; font-weight: 800; color: #aaa; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-        .post-content { font-size: 16px; line-height: 1.5; word-wrap: break-word; }
-        .post-footer { margin-top: 15px; font-size: 11px; color: #444; font-weight: 700; }
-
-        /* Ввод */
-        #input-area { 
-            position: fixed; bottom: 0; left: 0; width: 100%; padding: 25px 20px;
-            background: linear-gradient(transparent, var(--bg) 40%); display: flex; justify-content: center;
-        }
-        #post-input { 
-            width: 100%; max-width: 500px; background: #1a1a1a; border: 1px solid #222;
-            color: #fff; padding: 18px 25px; border-radius: 35px; font-size: 16px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
-        }
+        /* Поиск и группы */
+        .page-title { font-size: 24px; font-weight: 900; margin-bottom: 20px; }
+        .search-bar { width: 100%; padding: 12px; background: #1a1a1a; border: 1px solid #333; border-radius: 10px; color: #fff; }
     </style>
 </head>
 <body>
 
-<div id="screen-step1" class="screen">
+<div id="screen-auth" class="screen">
     <div class="auth-box">
         <h1>KGTD</h1>
-        <input type="text" id="nick-input" placeholder="Никнейм" maxlength="14">
-        <button class="btn" onclick="nextStep()">ДАЛЕЕ</button>
+        <div id="auth-initial">
+            <button class="btn btn-main" onclick="showReg()">Создать аккаунт</button>
+            <button id="btn-login" class="btn btn-outline hidden" onclick="fastLogin()">Войти как <span id="saved-name"></span></button>
+        </div>
+        
+        <div id="auth-reg" class="hidden">
+            <input type="text" id="nick-input" placeholder="Твой ник" class="search-bar" style="margin-bottom:10px">
+            <div id="emoji-grid" style="display:grid; grid-template-columns: repeat(4,1fr); gap:10px; margin-bottom:15px"></div>
+            <button class="btn btn-main" onclick="finishRegistration()">Начать</button>
+        </div>
     </div>
 </div>
 
-<div id="screen-step2" class="screen hidden">
-    <div class="auth-box">
-        <h2 style="margin:0; font-size: 28px;">Выбери клан</h2>
-        <div class="emoji-grid" id="emoji-grid"></div>
-        <button class="btn" onclick="finishAuth()">ВСТУПИТЬ</button>
-    </div>
-</div>
-
-<header>
-    <div id="logo-top">KGTD</div>
-    <div id="me" style="font-size: 12px; font-weight: 800; color: #666;"></div>
+<header style="padding: 15px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center;">
+    <b id="page-name">Лента</b>
+    <span id="my-identity" style="font-size: 12px; opacity: 0.5;"></span>
 </header>
 
-<div id="feed"></div>
+<div id="main-container">
+    <div id="page-feed">
+        <div id="posts-list"></div>
+    </div>
 
-<div id="input-area">
-    <input type="text" id="post-input" placeholder="Напиши что-нибудь...">
+    <div id="page-search" class="hidden">
+        <h2 class="page-title">Поиск</h2>
+        <input type="text" class="search-bar" placeholder="Найти друзей или кланы...">
+        <p style="color:#444; margin-top:20px">Здесь будет список пользователей...</p>
+    </div>
+</div>
+
+<nav>
+    <div class="active" onclick="switchPage('feed', this)">🏠</div>
+    <div onclick="switchPage('search', this)">🔍</div>
+    <div onclick="switchPage('clan', this)">🛡️</div>
+</nav>
+
+<div id="input-wrap" style="position:fixed; bottom: 70px; width:100%; display:flex; justify-content:center; padding: 0 20px;">
+    <input type="text" id="post-input" placeholder="Что нового?" class="search-bar" style="border-radius: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);">
 </div>
 
 <script src="script.js"></script>
