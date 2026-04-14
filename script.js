@@ -1,109 +1,99 @@
-const socket = io();
-let mode = 'reg';
-let selectedEmoji = "";
-let myData = JSON.parse(localStorage.getItem('kgtd_v3'));
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>КГТД — Здесь кайфово</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        :root { --bg: #0d0d12; --card: #16161e; --accent: #7c4dff; --text: #e1e1e6; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+        body { margin: 0; background: var(--bg); color: var(--text); font-family: sans-serif; background-image: radial-gradient(circle at 50% -20%, #2a1a4a 0%, #0d0d12 80%); overflow: hidden; }
+        input { user-select: text; -webkit-user-select: text; outline: none; }
 
-const clans = ["🔥", "🪐", "🧿", "⚡", "🦾", "🧬", "🧪", "💎"];
-const allUsers = new Set();
+        .screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 1000; transition: 0.5s; }
+        .hidden { opacity: 0; pointer-events: none; transform: translateY(30px); }
 
-// Рисуем кланы
-const grid = document.getElementById('emoji-grid');
-clans.forEach(e => {
-    const d = document.createElement('div');
-    d.className = 'emoji-item'; d.innerText = e;
-    d.onclick = () => {
-        document.querySelectorAll('.emoji-item').forEach(i => i.classList.remove('selected'));
-        d.classList.add('selected'); selectedEmoji = e;
-    };
-    grid.appendChild(d);
-});
+        .auth-box { width: 85%; max-width: 340px; text-align: center; }
+        h1 { font-size: 54px; letter-spacing: -3px; margin: 0; background: linear-gradient(to bottom, #fff, #7c4dff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .slogan { color: #555; font-size: 14px; margin-bottom: 40px; font-weight: 600; }
 
-// Авто-вход
-window.onload = () => { if (myData) enterApp(); };
+        .input-style { width: 100%; padding: 18px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 18px; color: #fff; margin-bottom: 12px; font-size: 16px; }
+        .btn-main { width: 100%; padding: 18px; border-radius: 18px; border: none; background: var(--accent); color: #fff; font-weight: 900; font-size: 16px; cursor: pointer; }
 
-// История (стрелки назад)
-window.onpopstate = (e) => { if (e.state) tab(e.state.page, null, false); };
+        .emoji-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 20px 0; }
+        .emoji-item { font-size: 26px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 15px; cursor: pointer; border: 2px solid transparent; }
+        .emoji-item.selected { border-color: var(--accent); background: rgba(124, 77, 255, 0.1); }
 
-function setMode(m) {
-    mode = m;
-    document.getElementById('auth-choice').classList.add('hidden');
-    document.getElementById('auth-form').classList.remove('hidden');
-    if (m === 'login') document.getElementById('reg-extras').classList.add('hidden');
-}
+        header { padding: 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(13, 13, 18, 0.7); backdrop-filter: blur(20px); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        #main-scroll { height: 100vh; overflow-y: auto; padding-bottom: 200px; }
+        
+        .post { background: var(--card); border-radius: 24px; padding: 20px; margin: 0 15px 15px; border: 1px solid rgba(255,255,255,0.03); animation: fadeIn 0.4s ease; }
+        .system-msg { background: rgba(124, 77, 255, 0.1); border: 1px dashed var(--accent); color: var(--accent); text-align: center; font-size: 12px; padding: 10px; border-radius: 15px; margin: 10px 15px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-function sendAuth() {
-    const nick = document.getElementById('nick-input').value.trim();
-    const pass = document.getElementById('pass-input').value.trim();
-    if (!nick || !pass) return alert("Введи данные!");
-    socket.emit('authenticate', { mode, nick, pass, clan: selectedEmoji });
-}
+        nav { position: fixed; bottom: 0; width: 100%; background: rgba(13, 13, 18, 0.9); display: flex; justify-content: space-around; padding: 25px; border-top: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(20px); }
+        nav div { font-size: 26px; opacity: 0.3; cursor: pointer; }
+        nav div.active { opacity: 1; }
 
-socket.on('authResult', (res) => {
-    if (res.success) {
-        myData = { id: res.userId, pass: res.pass };
-        localStorage.setItem('kgtd_v3', JSON.stringify(myData));
-        enterApp();
-    } else { alert(res.message); }
-});
+        /* Окно выхода */
+        #logout-modal { background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body>
 
-function enterApp() {
-    document.getElementById('screen-auth').classList.add('hidden');
-    document.getElementById('user-display').innerText = myData.id;
-    history.pushState({page: 'feed'}, '', '');
-}
+<div id="screen-auth" class="screen">
+    <div class="auth-box">
+        <h1>КГТД</h1>
+        <p class="slogan">Здесь кайфово</p>
+        <div id="auth-choice">
+            <button class="btn-main" style="margin-bottom:12px" onclick="setMode('reg')">СОЗДАТЬ АККАУНТ</button>
+            <button class="btn-main" style="background:transparent; color:#fff; border:1px solid #333;" onclick="setMode('login')">ВОЙТИ</button>
+        </div>
+        <div id="auth-form" class="hidden">
+            <input type="text" id="nick-input" placeholder="Никнейм" class="input-style">
+            <input type="password" id="pass-input" placeholder="Пароль" class="input-style">
+            <div id="reg-extras"><div class="emoji-grid" id="emoji-grid"></div></div>
+            <button id="submit-btn" class="btn-main" onclick="sendAuth()">ПОДТВЕРДИТЬ</button>
+            <p onclick="location.reload()" style="margin-top:20px; font-size:13px; color:#555; cursor:pointer">← Назад</p>
+        </div>
+    </div>
+</div>
 
-function logout() {
-    if (confirm("Выйти?")) {
-        localStorage.removeItem('kgtd_v3');
-        location.reload();
-    }
-}
+<div id="logout-modal" class="screen hidden">
+    <div class="auth-box">
+        <h2 style="margin-bottom:30px">Выход из КГТД</h2>
+        <button class="btn-main" style="background:#ff4d4d; margin-bottom:12px" onclick="confirmLogout()">ВЫЙТИ СОВСЕМ</button>
+        <button class="btn-main" style="background:transparent; border:1px solid #333" onclick="closeLogout()">ВЕРНУТЬСЯ (НАЗАД)</button>
+    </div>
+</div>
 
-function tab(page, el, push = true) {
-    document.getElementById('page-feed').classList.add('hidden');
-    document.getElementById('page-search').classList.add('hidden');
-    document.getElementById('input-wrap').style.display = (page === 'feed') ? 'flex' : 'none';
-    document.getElementById(`page-${page}`).classList.remove('hidden');
-    document.getElementById('page-title').innerText = page === 'feed' ? 'Лента' : 'Поиск';
-    if (push) history.pushState({page: page}, '', '');
-    if (el) {
-        document.querySelectorAll('nav div').forEach(d => d.classList.remove('active'));
-        el.classList.add('active');
-    }
-}
+<header>
+    <div>
+        <b id="page-title">Лента</b>
+        <div id="user-display" style="font-size:10px; color:#555; font-weight:bold;"></div>
+    </div>
+    <div onclick="openLogout()" style="font-size:22px; cursor:pointer; opacity:0.5">🚪</div>
+</header>
 
-// Работа с постами
-const pIn = document.getElementById('post-input');
-pIn.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter' && pIn.value.trim()) {
-        socket.emit('newPost', { user: myData.id, content: pIn.value });
-        pIn.value = '';
-    }
-});
+<div id="main-scroll">
+    <div id="page-feed" class="page"><div id="posts-container" style="margin-top:20px"></div></div>
+    <div id="page-search" class="page hidden" style="padding:20px">
+        <h2>Поиск</h2>
+        <input type="text" id="search-in" class="input-style" placeholder="Найти друга...">
+        <div id="search-results"></div>
+    </div>
+</div>
 
-socket.on('loadPosts', (posts) => {
-    document.getElementById('posts-container').innerHTML = '';
-    posts.forEach(addP);
-});
+<div id="input-wrap" style="position:fixed; bottom:95px; width:100%; padding:0 20px; display:flex;">
+    <input type="text" id="post-input" class="input-style" style="border-radius:40px; background: rgba(255,255,255,0.05);" placeholder="Что на уме?">
+</div>
 
-socket.on('updateFeed', addP);
+<nav>
+    <div class="active" onclick="tab('feed', this)">🏠</div>
+    <div onclick="tab('search', this)">🔍</div>
+</nav>
 
-function addP(p) {
-    allUsers.add(p.user);
-    const d = document.createElement('div'); d.className = 'post';
-    d.innerHTML = `<div class="post-user">${p.user}</div><div class="post-text">${p.content}</div>`;
-    document.getElementById('posts-container').prepend(d);
-}
-
-// Поиск друзей
-document.getElementById('search-in').addEventListener('input', (e) => {
-    const v = e.target.value.toLowerCase();
-    const r = document.getElementById('search-results');
-    r.innerHTML = '';
-    if (v.length < 2) return;
-    Array.from(allUsers).filter(u => u.toLowerCase().includes(v)).forEach(u => {
-        r.innerHTML += `<div style="background:rgba(255,255,255,0.03); padding:18px; border-radius:20px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; border:1px solid rgba(255,255,255,0.05)">
-            <span style="font-weight:bold">${u}</span><button onclick="alert('Добавлено!')" style="background:var(--accent); color:#fff; border:none; border-radius:10px; padding:8px 12px; font-weight:bold">ПРОФИЛЬ</button>
-        </div>`;
-    });
-});
+<script src="script.js"></script>
+</body>
+</html>
