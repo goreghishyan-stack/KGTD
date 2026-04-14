@@ -1,12 +1,12 @@
 const socket = io();
 let mode = 'reg';
 let selectedEmoji = "";
-let myData = JSON.parse(localStorage.getItem('kgtd_v2'));
+let myData = JSON.parse(localStorage.getItem('kgtd_v3'));
 
-const clans = ["🏴‍☠️", "💊", "🔥", "👁️", "🛡️", "⚡", "👾", "👑"];
+const clans = ["🔥", "🪐", "🧿", "⚡", "🦾", "🧬", "🧪", "💎"];
 const allUsers = new Set();
 
-// Отрисовка эмодзи
+// Рисуем кланы
 const grid = document.getElementById('emoji-grid');
 clans.forEach(e => {
     const d = document.createElement('div');
@@ -18,9 +18,10 @@ clans.forEach(e => {
     grid.appendChild(d);
 });
 
+// Авто-вход
 window.onload = () => { if (myData) enterApp(); };
 
-// Стрелки браузера
+// История (стрелки назад)
 window.onpopstate = (e) => { if (e.state) tab(e.state.page, null, false); };
 
 function setMode(m) {
@@ -33,14 +34,14 @@ function setMode(m) {
 function sendAuth() {
     const nick = document.getElementById('nick-input').value.trim();
     const pass = document.getElementById('pass-input').value.trim();
-    if (!nick || !pass) return alert("Заполни поля!");
+    if (!nick || !pass) return alert("Введи данные!");
     socket.emit('authenticate', { mode, nick, pass, clan: selectedEmoji });
 }
 
 socket.on('authResult', (res) => {
     if (res.success) {
         myData = { id: res.userId, pass: res.pass };
-        localStorage.setItem('kgtd_v2', JSON.stringify(myData));
+        localStorage.setItem('kgtd_v3', JSON.stringify(myData));
         enterApp();
     } else { alert(res.message); }
 });
@@ -49,6 +50,13 @@ function enterApp() {
     document.getElementById('screen-auth').classList.add('hidden');
     document.getElementById('user-display').innerText = myData.id;
     history.pushState({page: 'feed'}, '', '');
+}
+
+function logout() {
+    if (confirm("Выйти?")) {
+        localStorage.removeItem('kgtd_v3');
+        location.reload();
+    }
 }
 
 function tab(page, el, push = true) {
@@ -64,7 +72,7 @@ function tab(page, el, push = true) {
     }
 }
 
-// Посты
+// Работа с постами
 const pIn = document.getElementById('post-input');
 pIn.addEventListener('keypress', (e) => {
     if (e.key === 'Enter' && pIn.value.trim()) {
@@ -83,19 +91,19 @@ socket.on('updateFeed', addP);
 function addP(p) {
     allUsers.add(p.user);
     const d = document.createElement('div'); d.className = 'post';
-    d.innerHTML = `<div class="post-user">${p.user}</div><div>${p.content}</div>`;
+    d.innerHTML = `<div class="post-user">${p.user}</div><div class="post-text">${p.content}</div>`;
     document.getElementById('posts-container').prepend(d);
 }
 
-// Поиск
+// Поиск друзей
 document.getElementById('search-in').addEventListener('input', (e) => {
     const v = e.target.value.toLowerCase();
     const r = document.getElementById('search-results');
     r.innerHTML = '';
     if (v.length < 2) return;
     Array.from(allUsers).filter(u => u.toLowerCase().includes(v)).forEach(u => {
-        r.innerHTML += `<div style="background:#111; padding:15px; border-radius:12px; margin-bottom:10px; display:flex; justify-content:space-between">
-            <span>${u}</span><button onclick="alert('Добавлено!')" style="background:#fff; border:none; border-radius:5px; font-weight:bold">АККАУНТ</button>
+        r.innerHTML += `<div style="background:rgba(255,255,255,0.03); padding:18px; border-radius:20px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; border:1px solid rgba(255,255,255,0.05)">
+            <span style="font-weight:bold">${u}</span><button onclick="alert('Добавлено!')" style="background:var(--accent); color:#fff; border:none; border-radius:10px; padding:8px 12px; font-weight:bold">ПРОФИЛЬ</button>
         </div>`;
     });
 });
