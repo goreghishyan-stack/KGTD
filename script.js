@@ -2,60 +2,65 @@ const socket = io();
 let tempNick = "";
 let selectedEmoji = "";
 
-// Список всех эмодзи для выбора клана
-const emojis = ["🏴‍☠️","🛡️","💊","🔥","👁️","🎲","🚀","👑","💎","🪐","👻","⚡","🐍","☄️","👾","🧿","🩸","🔗","🦾","🌘"];
+const clans = ["🏴‍☠️", "💊", "🔥", "👁️", "🛡️", "🧬", "🦾", "💎", "👾", "🩸", "⚡", "🐍"];
 
-// Заполняем сетку эмодзи
+// Генерация сетки кланов
 const grid = document.getElementById('emoji-grid');
-emojis.forEach(e => {
-    const el = document.createElement('div');
-    el.className = 'emoji-item';
-    el.innerText = e;
-    el.onclick = () => {
+clans.forEach(emoji => {
+    const div = document.createElement('div');
+    div.className = 'emoji-item';
+    div.innerText = emoji;
+    div.onclick = () => {
         document.querySelectorAll('.emoji-item').forEach(i => i.classList.remove('selected'));
-        el.classList.add('selected');
-        selectedEmoji = e;
+        div.classList.add('selected');
+        selectedEmoji = emoji;
     };
-    grid.appendChild(el);
+    grid.appendChild(div);
 });
 
-// Авто-вход
+// Проверка памяти при загрузке
 window.onload = () => {
-    const saved = localStorage.getItem('kgtd_id');
+    const saved = localStorage.getItem('kgtd_user');
     if (saved) {
-        startApp(saved);
+        completeLogin(saved);
     }
 };
 
-function goToClans() {
-    tempNick = document.getElementById('input-nick').value.trim();
-    if (!tempNick) return;
-    document.getElementById('screen-reg').classList.add('hidden');
-    document.getElementById('screen-clan').classList.remove('hidden');
+function nextStep() {
+    tempNick = document.getElementById('nick-input').value.trim();
+    if (!tempNick) return alert("Введите ник!");
+    document.getElementById('screen-step1').classList.add('hidden');
+    document.getElementById('screen-step2').classList.remove('hidden');
 }
 
-function finishReg() {
-    if (!selectedEmoji) return alert("Выбери эмодзи клана!");
-    const fullId = `${selectedEmoji} ${tempNick}`;
-    localStorage.setItem('kgtd_id', fullId);
-    startApp(fullId);
+function finishAuth() {
+    if (!selectedEmoji) return alert("Выбери свой клан!");
+    const finalId = `${selectedEmoji} ${tempNick}`;
+    localStorage.setItem('kgtd_user', finalId);
+    completeLogin(finalId);
 }
 
-function startApp(id) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-    document.getElementById('display-user').innerText = id;
-    window.myId = id;
+function completeLogin(id) {
+    document.getElementById('screen-step1').classList.add('hidden');
+    document.getElementById('screen-step2').classList.add('hidden');
+    document.getElementById('me').innerText = id;
+    window.myTag = id;
 }
 
-// Отправка
-document.getElementById('post-input').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter' && e.target.value.trim() && window.myId) {
-        socket.emit('newPost', { user: window.myId, content: e.target.value });
-        e.target.value = '';
+// Посты
+const input = document.getElementById('post-input');
+input.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && input.value.trim() && window.myTag) {
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        socket.emit('newPost', { 
+            user: window.myTag, 
+            content: input.value,
+            time: time 
+        });
+        input.value = '';
     }
 });
 
-// Лента
 socket.on('loadPosts', (posts) => {
     document.getElementById('feed').innerHTML = '';
     posts.forEach(addPost);
@@ -66,6 +71,10 @@ socket.on('updateFeed', addPost);
 function addPost(post) {
     const div = document.createElement('div');
     div.className = 'post';
-    div.innerHTML = `<div class="post-user">${post.user}</div><div class="post-text">${post.content}</div>`;
+    div.innerHTML = `
+        <div class="post-user">${post.user}</div>
+        <div class="post-content">${post.content}</div>
+        <div class="post-footer">${post.time || ''}</div>
+    `;
     document.getElementById('feed').prepend(div);
 }
