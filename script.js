@@ -1,44 +1,71 @@
+const socket = io();
+let tempNick = "";
 let selectedEmoji = "";
-let myFullIdentity = "";
 
-// Проверка: если юзер уже заходил раньше
+// Список всех эмодзи для выбора клана
+const emojis = ["🏴‍☠️","🛡️","💊","🔥","👁️","🎲","🚀","👑","💎","🪐","👻","⚡","🐍","☄️","👾","🧿","🩸","🔗","🦾","🌘"];
+
+// Заполняем сетку эмодзи
+const grid = document.getElementById('emoji-grid');
+emojis.forEach(e => {
+    const el = document.createElement('div');
+    el.className = 'emoji-item';
+    el.innerText = e;
+    el.onclick = () => {
+        document.querySelectorAll('.emoji-item').forEach(i => i.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedEmoji = e;
+    };
+    grid.appendChild(el);
+});
+
+// Авто-вход
 window.onload = () => {
-    const savedIdentity = localStorage.getItem('kgtd_user');
-    if (savedIdentity) {
-        myFullIdentity = savedIdentity;
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('user-name').innerText = myFullIdentity;
+    const saved = localStorage.getItem('kgtd_id');
+    if (saved) {
+        startApp(saved);
     }
 };
 
-function selectClan(emoji, element) {
-    selectedEmoji = emoji;
-    // Снимаем выделение со всех и ставим на текущий
-    document.querySelectorAll('.clan-opt').forEach(opt => opt.classList.remove('selected'));
-    element.classList.add('selected');
+function goToClans() {
+    tempNick = document.getElementById('input-nick').value.trim();
+    if (!tempNick) return;
+    document.getElementById('screen-reg').classList.add('hidden');
+    document.getElementById('screen-clan').classList.remove('hidden');
 }
 
-function enterKGTD() {
-    const nick = document.getElementById('nickname').value.trim();
-    if (!nick) return alert("Введи ник!");
-    if (!selectedEmoji) return alert("Выбери клан (эмодзи)!");
-
-    myFullIdentity = `${selectedEmoji} ${nick}`;
-    
-    // СОХРАНЯЕМ В БРАУЗЕР (чтобы не вводить снова)
-    localStorage.setItem('kgtd_user', myFullIdentity);
-    
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('user-name').innerText = myFullIdentity;
+function finishReg() {
+    if (!selectedEmoji) return alert("Выбери эмодзи клана!");
+    const fullId = `${selectedEmoji} ${tempNick}`;
+    localStorage.setItem('kgtd_id', fullId);
+    startApp(fullId);
 }
 
-// При отправке поста теперь всегда используем myFullIdentity
-postInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter' && postInput.value.trim() && myFullIdentity) {
-        socket.emit('newPost', { 
-            user: myFullIdentity, 
-            content: postInput.value 
-        });
-        postInput.value = '';
+function startApp(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+    document.getElementById('display-user').innerText = id;
+    window.myId = id;
+}
+
+// Отправка
+document.getElementById('post-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && e.target.value.trim() && window.myId) {
+        socket.emit('newPost', { user: window.myId, content: e.target.value });
+        e.target.value = '';
     }
 });
+
+// Лента
+socket.on('loadPosts', (posts) => {
+    document.getElementById('feed').innerHTML = '';
+    posts.forEach(addPost);
+});
+
+socket.on('updateFeed', addPost);
+
+function addPost(post) {
+    const div = document.createElement('div');
+    div.className = 'post';
+    div.innerHTML = `<div class="post-user">${post.user}</div><div class="post-text">${post.content}</div>`;
+    document.getElementById('feed').prepend(div);
+}
